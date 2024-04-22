@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Navbar from "@/components/organisms/Navbar";
 import Footer from "@/components/organisms/Footer";
+import { Providers } from "./providers";
 import "@/styles/globals.css";
+import dayjs from "dayjs";
+import "dayjs/locale/en";
+
+dayjs.locale("en");
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,9 +28,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Navbar />
-        <main className="p-8">
-          {children}
-        </main>
+        <Providers>{children}</Providers>
         <Footer />
       </body>
     </html>

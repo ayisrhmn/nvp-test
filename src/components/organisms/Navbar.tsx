@@ -1,17 +1,12 @@
 import Link from "next/link";
 import Button from "../atoms/Button";
-import { Badge } from "antd";
 import { SunOutlined } from "@ant-design/icons";
 import BadgeCart from "../atoms/BadgeCart";
 
 const menu = [
   {
-    label: "Home",
+    label: "Products",
     url: "/",
-  },
-  {
-    label: "Store",
-    url: "/store",
   },
   {
     label: "Cart",
