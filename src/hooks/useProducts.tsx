@@ -1,17 +1,27 @@
-import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { http } from "@/utils";
 
-const fetchProducts = async (offset = 0, limit: 5) => {
-  const { data } = await axios.get(
-    `${process.env.NEXT_PUBLIC_API}/products?offset=${offset}&limit=${limit}`
+const fetchProducts = async (
+  keyword: string,
+  offset: number,
+  limit: number
+) => {
+  const res = await http.get(
+    `/products?${
+      keyword.length > 0 ? `title=${keyword}&` : ""
+    }offset=${offset}&limit=${limit}`
   );
-  return data;
+  const r = await http.get(
+    `/products?${keyword.length > 0 ? `title=${keyword}` : ""}`
+  );
+  return { items: res.data, count: r.data.length };
 };
 
-const useProducts = (offset: any, limit: any) => {
+const useProducts = (keyword: string, offset: number, limit: number) => {
   return useQuery({
-    queryKey: ["/products", `offset=${offset}`, `limit=${limit}`],
-    queryFn: () => fetchProducts(offset, limit),
+    queryKey: ["products", keyword, offset, limit],
+    queryFn: () => fetchProducts(keyword, offset, limit),
+    placeholderData: keepPreviousData,
   });
 };
 

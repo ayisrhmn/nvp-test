@@ -3,8 +3,11 @@ import { Inter } from "next/font/google";
 import Navbar from "@/components/organisms/Navbar";
 import Footer from "@/components/organisms/Footer";
 import { Providers } from "./providers";
-import "@/styles/globals.css";
+import { ToastContainer } from "react-toastify";
 import dayjs from "dayjs";
+
+import "@/styles/globals.css";
+import "react-toastify/dist/ReactToastify.css";
 import "dayjs/locale/en";
 
 dayjs.locale("en");
@@ -30,6 +33,7 @@ export default function RootLayout({
         <Navbar />
         <Providers>{children}</Providers>
         <Footer />
+        <ToastContainer />
       </body>
     </html>
   );
