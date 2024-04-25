@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useCategories,
   useCreateProduct,
   useDeleteProduct,
+  useEditProduct,
+  useProduct,
   useProducts,
 } from "@/hooks";
 import {
@@ -12,7 +14,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Input, InputNumber, Select, Skeleton } from "antd";
+import { Alert, Input, InputNumber, Select, Skeleton } from "antd";
 import { formatDate, formatMoney, generateRandomString } from "@/utils";
 import Image from "next/image";
 import DataTable from "@/components/molecules/DataTable";
@@ -31,6 +33,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 type ProductsType = {
   id: number;
   title: string;
+  category: {
+    id: number;
+    name: string;
+  };
   price: number;
   description: string;
   images: any;
@@ -69,6 +75,10 @@ const columns = [
     header: () => "Title",
     cell: (item) => item.getValue(),
   }),
+  columnHelper.accessor("category", {
+    header: () => "Category",
+    cell: (item) => item.getValue().name,
+  }),
   columnHelper.accessor("price", {
     header: () => "Price",
     cell: (item) => `${formatMoney(item.getValue())}`,
@@ -91,11 +101,12 @@ export default function Products() {
   const [page, setPage] = useState(1);
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(5);
+  const [idProduct, setIdProduct] = useState<number | null>(null);
 
   const products = useProducts(keyword, offset, limit);
   const createProduct = useCreateProduct(setMode, keyword, offset, limit);
+  const editProduct = useEditProduct(setMode, keyword, offset, limit);
   const deleteProduct = useDeleteProduct(keyword, offset, limit);
-  const categories = useCategories();
 
   const table = useReactTable({
     data: products.data?.items,
@@ -124,6 +135,10 @@ export default function Products() {
             onClickAdd={() => {
               setMode("form");
             }}
+            onClickEdit={(id: number) => {
+              setMode("form");
+              setIdProduct(id);
+            }}
             onConfirmDelete={(id: number) => {
               deleteProduct.mutateAsync(id).then(() => {
                 if (products.data?.items.length <= 1) {
@@ -139,12 +154,14 @@ export default function Products() {
         </div>
       ) : (
         <FormProduct
-          categories={categories}
+          itemId={idProduct}
           onClickBack={() => {
             setMode("table");
+            setIdProduct(null);
             queryClient.invalidateQueries({
               queryKey: ["products", keyword, offset, limit],
             });
+            queryClient.removeQueries();
           }}
           onSubmitForm={(data: any) => {
             const mappedImages = data.images.map((item: any) => item.url);
@@ -152,7 +169,11 @@ export default function Products() {
               ...data,
               images: mappedImages,
             };
-            createProduct.mutate(newData);
+            if (!idProduct) {
+              createProduct.mutate(newData);
+            } else {
+              editProduct.mutate({ id: idProduct, item: newData });
+            }
           }}
         />
       )}
@@ -161,7 +182,7 @@ export default function Products() {
 }
 
 interface FormProductProps {
-  categories: UseQueryResult<any, Error>;
+  itemId: number | null;
   onClickBack?: () => void;
   onSubmitForm?: (data: any) => void;
 }
@@ -200,11 +221,20 @@ const schema: ZodType<FieldType> = z.object({
   ),
 });
 
-function FormProduct({
-  categories,
-  onClickBack,
-  onSubmitForm,
-}: FormProductProps) {
+function FormProduct({ itemId, onClickBack, onSubmitForm }: FormProductProps) {
+  const categories = useCategories();
+  const product = useProduct(itemId);
+
+  useEffect(() => {
+    if (product.status === "success" && product.data?.images) {
+      remove(0);
+      product.data?.images.map((item: any) => {
+        append({ ...item, url: item?.url?.replace(/[\[\]"]/g, "") });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.status, product.data]);
+
   const {
     control,
     register,
@@ -233,282 +263,192 @@ function FormProduct({
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div>
-          <div className="flex gap-4 mb-4">
-            <Controller
-              control={control}
-              name="title"
-              render={({ field }) => (
-                <div className="w-full">
-                  <p className="text-xs font-normal mb-1">
-                    <b className="text-red-500">*</b>Title
-                  </p>
-                  <Input
-                    {...field}
-                    value={field.value}
-                    placeholder="Input title"
-                    size="large"
-                    status={errors.title && "error"}
-                  />
-                  {errors.title && (
-                    <span className="text-xs font-medium text-red-500">
-                      {errors.title.message}
-                    </span>
-                  )}
-                </div>
-              )}
-            />
-            <Controller
-              control={control}
-              name="price"
-              render={({ field }) => (
-                <div className="flex flex-col w-full">
-                  <p className="text-xs font-normal mb-1">
-                    <b className="text-red-500">*</b>Price
-                  </p>
-                  <InputNumber<number>
-                    {...field}
-                    value={field.value}
-                    formatter={(value) =>
-                      `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                    }
-                    parser={(value) =>
-                      value?.replace(/\$\s?|(,*)/g, "") as unknown as number
-                    }
-                    status={errors.price && "error"}
-                    size="large"
-                    className="w-full mb-2"
-                  />
-                  {errors.price && (
-                    <span className="text-xs font-medium text-red-500">
-                      {errors.price.message}
-                    </span>
-                  )}
-                </div>
-              )}
-            />
-          </div>
-          <div className="flex gap-4 mb-4">
-            <Controller
-              control={control}
-              name="description"
-              render={({ field }) => (
-                <div className="w-full">
-                  <p className="text-xs font-normal mb-1">
-                    <b className="text-red-500">*</b>Description
-                  </p>
-                  <Input
-                    {...field}
-                    value={field.value}
-                    placeholder="Input description"
-                    size="large"
-                    status={errors.description && "error"}
-                  />
-                  {errors.description && (
-                    <span className="text-xs font-medium text-red-500">
-                      {errors.description.message}
-                    </span>
-                  )}
-                </div>
-              )}
-            />
-            <Controller
-              control={control}
-              name="categoryId"
-              render={({ field }) => (
-                <div className="flex flex-col w-full">
-                  <p className="text-xs font-normal mb-1">
-                    <b className="text-red-500">*</b>Category
-                  </p>
-                  <Select
-                    {...field}
-                    value={field.value}
-                    placeholder="Select category"
-                    size="large"
-                    options={
-                      categories.status === "success" ? categories.data : []
-                    }
-                    status={errors.categoryId && "error"}
-                    className="w-full mb-2"
-                  />
-                  {errors.categoryId && (
-                    <span className="text-xs font-medium text-red-500">
-                      {errors.categoryId.message}
-                    </span>
-                  )}
-                </div>
-              )}
-            />
-          </div>
-          <div className="mb-4">
-            {fields.map((item, index) => (
-              <div
-                key={item.id}
-                className="mb-4 flex gap-4 items-center justify-center"
-              >
-                <input {...register(`images.${index}.id`)} hidden />
-                <Controller
-                  control={control}
-                  name={`images.${index}.url`}
-                  render={({ field }) => (
-                    <div className="w-full">
-                      <p className="text-xs font-normal mb-1">
-                        Url images - {index + 1}
-                      </p>
-                      <Input
-                        {...field}
-                        placeholder="Input url images"
-                        size="large"
-                        status={errors.images?.[index]?.url && "error"}
-                      />
-                      {errors.images?.[index]?.url && (
-                        <span className="text-xs font-medium text-red-500">
-                          {errors.images?.[index]?.url?.message}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                />
-                {fields.length > 1 ? (
-                  <div className="pt-4">
-                    <Button
-                      icon={<DeleteOutlined />}
-                      type="primary"
-                      danger
-                      onClick={() => remove(index)}
+      {product.status === "pending" ? (
+        <Skeleton active />
+      ) : product.status === "error" ? (
+        <Alert
+          message="Error"
+          description={product.error?.message}
+          type="error"
+          showIcon
+        />
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div>
+            <div className="flex gap-4 mb-4">
+              <Controller
+                control={control}
+                name="title"
+                defaultValue={product.data ? product.data.title : ""}
+                render={({ field }) => (
+                  <div className="w-full">
+                    <p className="text-xs font-normal mb-1">
+                      <b className="text-red-500">*</b>Title
+                    </p>
+                    <Input
+                      {...field}
+                      value={field.value}
+                      placeholder="Input title"
+                      size="large"
+                      status={errors.title && "error"}
                     />
+                    {errors.title && (
+                      <span className="text-xs font-medium text-red-500">
+                        {errors.title.message}
+                      </span>
+                    )}
                   </div>
-                ) : null}
-              </div>
-            ))}
+                )}
+              />
+              <Controller
+                control={control}
+                name="price"
+                defaultValue={product.data ? product.data.price : undefined}
+                render={({ field }) => (
+                  <div className="flex flex-col w-full">
+                    <p className="text-xs font-normal mb-1">
+                      <b className="text-red-500">*</b>Price
+                    </p>
+                    <InputNumber<number>
+                      {...field}
+                      value={field.value}
+                      formatter={(value) =>
+                        `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                      }
+                      parser={(value) =>
+                        value?.replace(/\$\s?|(,*)/g, "") as unknown as number
+                      }
+                      status={errors.price && "error"}
+                      size="large"
+                      className="w-full mb-2"
+                    />
+                    {errors.price && (
+                      <span className="text-xs font-medium text-red-500">
+                        {errors.price.message}
+                      </span>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+            <div className="flex gap-4 mb-4">
+              <Controller
+                control={control}
+                name="description"
+                defaultValue={product.data ? product.data.description : ""}
+                render={({ field }) => (
+                  <div className="w-full">
+                    <p className="text-xs font-normal mb-1">
+                      <b className="text-red-500">*</b>Description
+                    </p>
+                    <Input
+                      {...field}
+                      value={field.value}
+                      placeholder="Input description"
+                      size="large"
+                      status={errors.description && "error"}
+                    />
+                    {errors.description && (
+                      <span className="text-xs font-medium text-red-500">
+                        {errors.description.message}
+                      </span>
+                    )}
+                  </div>
+                )}
+              />
+              <Controller
+                control={control}
+                name="categoryId"
+                defaultValue={product.data ? product.data.category?.id : ""}
+                render={({ field }) => (
+                  <div className="flex flex-col w-full">
+                    <p className="text-xs font-normal mb-1">
+                      <b className="text-red-500">*</b>Category
+                    </p>
+                    <Select
+                      {...field}
+                      value={field.value}
+                      placeholder="Select category"
+                      size="large"
+                      options={
+                        categories.status === "success" ? categories.data : []
+                      }
+                      status={errors.categoryId && "error"}
+                      className="w-full mb-2"
+                    />
+                    {errors.categoryId && (
+                      <span className="text-xs font-medium text-red-500">
+                        {errors.categoryId.message}
+                      </span>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+            <div className="mb-4">
+              {fields.map((item, index) => (
+                <div
+                  key={item.id}
+                  className="mb-4 flex gap-4 items-center justify-center"
+                >
+                  <input {...register(`images.${index}.id`)} hidden />
+                  <Controller
+                    control={control}
+                    name={`images.${index}.url`}
+                    render={({ field }) => (
+                      <div className="w-full">
+                        <p className="text-xs font-normal mb-1">
+                          Url images - {index + 1}
+                        </p>
+                        <Input
+                          {...field}
+                          placeholder="Input url images"
+                          size="large"
+                          status={errors.images?.[index]?.url && "error"}
+                        />
+                        {errors.images?.[index]?.url && (
+                          <span className="text-xs font-medium text-red-500">
+                            {errors.images?.[index]?.url?.message}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  />
+                  {fields.length > 1 ? (
+                    <div className="pt-4">
+                      <Button
+                        icon={<DeleteOutlined />}
+                        type="primary"
+                        danger
+                        onClick={() => remove(index)}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+              <Button
+                icon={<PlusOutlined />}
+                type="primary"
+                onClick={() =>
+                  append({ id: generateRandomString(10), url: "" })
+                }
+              >
+                Add url images
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center justify-end">
             <Button
-              icon={<PlusOutlined />}
               type="primary"
-              onClick={() => append({ id: generateRandomString(10), url: "" })}
+              icon={<SaveOutlined />}
+              htmlType="submit"
+              size="large"
             >
-              Add url images
+              Save
             </Button>
           </div>
-        </div>
-        <div className="flex items-center justify-end">
-          <Button
-            type="primary"
-            icon={<SaveOutlined />}
-            htmlType="submit"
-            size="large"
-          >
-            Save
-          </Button>
-        </div>
-      </form>
-
-      {/* <Form
-        labelCol={{ span: 8 }}
-        wrapperCol={{ span: 16 }}
-        style={{ maxWidth: "60%" }}
-        onFinish={(values) => {
-          handleSubmit(onSubmit);
-        }}
-      >
-        <Form.Item<FieldType>
-          label="Title"
-          name="title"
-          rules={[{ required: true }]}
-        >
-          <Input
-            placeholder="Input title"
-            size="large"
-            {...register("title")}
-          />
-        </Form.Item>
-
-        <Form.Item<FieldType>
-          label="Price"
-          name="price"
-          rules={[{ required: true }]}
-        >
-          <InputNumber<number>
-            size={"large"}
-            style={{ width: "50%" }}
-            defaultValue={0}
-            formatter={(value) =>
-              `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-            }
-            parser={(value) =>
-              value?.replace(/\$\s?|(,*)/g, "") as unknown as number
-            }
-            {...register("price")}
-          />
-        </Form.Item>
-
-        <Form.Item<FieldType>
-          label="Description"
-          name="description"
-          rules={[{ required: true }]}
-        >
-          <Input
-            placeholder="Input description"
-            size="large"
-            {...register("description")}
-          />
-        </Form.Item>
-
-        <Form.Item<FieldType>
-          label="Categories"
-          name="categoryId"
-          rules={[{ required: true }]}
-        >
-          <Select
-            placeholder="Select category"
-            size="large"
-            style={{ width: "50%" }}
-            options={categories.status === "success" ? categories.data : []}
-            id="category-id"
-            {...register("categoryId")}
-          />
-        </Form.Item>
-
-        <Form.Item<FieldType> label="Url images" name="images">
-          <div className="mb-6">
-            {images.map((item, i) => (
-              <div
-                key={i}
-                className="mb-4 flex gap-4 items-center justify-center"
-              >
-                <Input
-                  placeholder="Input url images"
-                  size="large"
-                  {...register(`images.${i}`)}
-                />
-                {images.length > 1 ? (
-                  <Button
-                    icon={<DeleteOutlined />}
-                    type="primary"
-                    danger
-                    onClick={() => {
-                      let newArr = [...images];
-                      newArr.splice(i, 1);
-                      setImages(newArr);
-                    }}
-                  />
-                ) : null}
-              </div>
-            ))}
-            <Button
-              icon={<PlusOutlined />}
-              type="primary"
-              onClick={() => setImages([...images, ""])}
-            />
-          </div>
-        </Form.Item>
-
-        <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-          <Button type="primary" htmlType="submit" size="large">
-            Submit
-          </Button>
-        </Form.Item>
-      </Form> */}
+        </form>
+      )}
     </div>
   );
 }

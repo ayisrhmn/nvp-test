@@ -22,6 +22,7 @@ const useCreateProduct = (
     onSuccess: () => {
       setMode("table");
       queryClient.invalidateQueries({ queryKey });
+      queryClient.removeQueries();
       toast.success("Data created successfully", {
         position: "top-right",
         theme: "light",
@@ -30,6 +31,7 @@ const useCreateProduct = (
     onError: () => {
       setMode("table");
       queryClient.invalidateQueries({ queryKey });
+      queryClient.removeQueries();
       toast.error("Error: Action execution failed", {
         position: "top-right",
         theme: "light",

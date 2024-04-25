@@ -1,27 +1,35 @@
 import { http } from "@/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Dispatch } from "react";
 import { toast } from "react-toastify";
 
-const deleteProduct = async (id: number) => {
-  const res = await http.delete(`/products/${id}`);
+const editProduct = async (data: { id: number; item: any }) => {
+  const res = await http.put(`/products/${data.id}`, data.item);
   return res.data;
 };
 
-const useDeleteProduct = (keyword: string, offset: number, limit: number) => {
+const useEditProduct = (
+  setMode: Dispatch<any>,
+  keyword: string,
+  offset: number,
+  limit: number
+) => {
   const queryClient = useQueryClient();
   const queryKey = ["products", keyword, offset, limit];
 
   return useMutation({
-    mutationFn: deleteProduct,
+    mutationFn: editProduct,
     onSuccess: () => {
+      setMode("table");
       queryClient.invalidateQueries({ queryKey });
       queryClient.removeQueries();
-      toast.success("Data deleted successfully", {
+      toast.success("Data updated successfully", {
         position: "top-right",
         theme: "light",
       });
     },
     onError: () => {
+      setMode("table");
       queryClient.invalidateQueries({ queryKey });
       queryClient.removeQueries();
       toast.error("Error: Action execution failed", {
@@ -32,4 +40,4 @@ const useDeleteProduct = (keyword: string, offset: number, limit: number) => {
   });
 };
 
-export { useDeleteProduct };
+export { useEditProduct };

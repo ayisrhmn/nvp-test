@@ -23,6 +23,7 @@ interface TableProps {
   pageSize: number;
   onSearch?: SearchProps["onSearch"];
   onClickAdd?: ButtonProps["onClick"];
+  onClickEdit?: (id: number) => void;
   onConfirmDelete?: (id: number) => void;
   onPageChange: PaginationProps["onChange"];
 }
@@ -34,6 +35,7 @@ export default function DataTable({
   pageSize,
   onSearch,
   onClickAdd,
+  onClickEdit,
   onConfirmDelete,
   onPageChange,
 }: TableProps) {
@@ -106,6 +108,7 @@ export default function DataTable({
                   ))}
                   <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
                     <RowActions
+                      onClickEdit={() => onClickEdit?.(row.original.id)}
                       onClickDelete={() => {
                         Modal.confirm({
                           title: row.original.title,

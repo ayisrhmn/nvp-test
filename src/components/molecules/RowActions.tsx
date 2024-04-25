@@ -10,6 +10,7 @@ interface RowActionsProps {
   hideCart?: boolean;
   hideEdit?: boolean;
   hideDelete?: boolean;
+  onClickEdit?: ButtonProps["onClick"];
   onClickDelete?: ButtonProps["onClick"];
 }
 
@@ -17,6 +18,7 @@ export default function RowActions({
   hideCart,
   hideEdit,
   hideDelete,
+  onClickEdit,
   onClickDelete,
 }: RowActionsProps) {
   return (
@@ -25,7 +27,12 @@ export default function RowActions({
         <Button icon={<ShoppingCartOutlined />} type="primary" />
       ) : null}
       {!hideEdit ? (
-        <Button icon={<EditOutlined />} type="primary" ghost />
+        <Button
+          icon={<EditOutlined />}
+          type="primary"
+          ghost
+          onClick={onClickEdit}
+        />
       ) : null}
       {!hideDelete ? (
         <Button
