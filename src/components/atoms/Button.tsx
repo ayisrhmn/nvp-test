@@ -10,6 +10,7 @@ interface ButtonProps {
   ghost?: boolean;
   htmlType?: "button" | "submit" | "reset" | undefined;
   children?: React.ReactNode;
+  disabled?: boolean;
   onClick?: MouseEventHandler<HTMLElement> | undefined;
 }
 

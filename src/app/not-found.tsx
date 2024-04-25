@@ -1,5 +1,5 @@
-import Button from "@/components/atoms/Button";
 import Link from "next/link";
+import Button from "@/components/atoms/Button";
 
 export default function NotFound() {
   return (
@@ -11,7 +11,7 @@ export default function NotFound() {
         an error contact support.
       </p>
       <Link href="/">
-        <Button type="primary" ghost>Return Home</Button>
+        <Button type="primary" size="large" ghost>Return Home</Button>
       </Link>
     </div>
   );

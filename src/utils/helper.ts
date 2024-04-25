@@ -20,4 +20,12 @@ const generateRandomString = (length: number) => {
   return result;
 };
 
-export { formatMoney, formatDate, generateRandomString };
+const themeHelper = (mode: any) => {
+  return {
+    main: mode === "light" ? "main-light" : "main-dark",
+    text: mode === "light" ? "text-gray-950" : "text-white",
+    navLink: mode === "light" ? "text-blue-500" : "text-blue-400",
+  };
+};
+
+export { formatMoney, formatDate, generateRandomString, themeHelper };

@@ -12,26 +12,40 @@ const { Search } = Input;
 
 interface TableProps {
   config: Table<any>;
-  queryResults: UseQueryResult<
+  useLoading?: boolean;
+  hideSearch?: boolean;
+  hideActionCart?: boolean;
+  hideActionEdit?: boolean;
+  hideActionDelete?: boolean;
+  noConfirmDelete?: boolean;
+  queryResults?: UseQueryResult<
     {
       items: any;
       count: any;
     },
     Error
   >;
-  page: number;
-  pageSize: number;
+  hidePagination?: boolean;
+  page?: number;
+  pageSize?: number;
   onSearch?: SearchProps["onSearch"];
   onClickAdd?: ButtonProps["onClick"];
   onClickCart?: (item: any) => void;
   onClickEdit?: (id: number) => void;
   onConfirmDelete?: (id: number) => void;
-  onPageChange: PaginationProps["onChange"];
+  onPageChange?: PaginationProps["onChange"];
 }
 
 export default function DataTable({
   config,
+  useLoading = true,
+  hideSearch,
+  hideActionCart,
+  hideActionEdit,
+  hideActionDelete,
+  noConfirmDelete,
   queryResults,
+  hidePagination,
   page,
   pageSize,
   onSearch,
@@ -44,25 +58,27 @@ export default function DataTable({
   const results = queryResults;
   return (
     <>
-      <div className="mb-6 flex gap-12">
-        <Search
-          placeholder="Search by product title"
-          enterButton
-          size="large"
-          onSearch={onSearch}
-        />
-        <Button
-          icon={<PlusOutlined />}
-          type="primary"
-          size="large"
-          onClick={onClickAdd}
-        >
-          Add Product
-        </Button>
-      </div>
-      {results.status === "pending" ? (
+      {!hideSearch ? (
+        <div className="mb-6 flex gap-12">
+          <Search
+            placeholder="Search by product title"
+            enterButton
+            size="large"
+            onSearch={onSearch}
+          />
+          <Button
+            icon={<PlusOutlined />}
+            type="primary"
+            size="large"
+            onClick={onClickAdd}
+          >
+            Add Product
+          </Button>
+        </div>
+      ) : null}
+      {results?.status === "pending" && useLoading ? (
         <Skeleton active />
-      ) : results.status === "error" ? (
+      ) : results?.status === "error" ? (
         <Alert
           message="Error"
           description={results.error?.message}
@@ -70,7 +86,7 @@ export default function DataTable({
           showIcon
         />
       ) : (
-        <Spin spinning={results.isFetching} size="large">
+        <Spin spinning={results ? results.isFetching : false} size="large">
           <table className="min-w-full divide-y divide-gray-200 mb-8">
             <thead>
               {config.getHeaderGroups().map((headerGroup) => (
@@ -95,53 +111,70 @@ export default function DataTable({
               ))}
             </thead>
             <tbody>
-              {config.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-6 py-4 whitespace-no-wrap border-b border-gray-200"
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+              {config.getRowModel().rows.length > 0 ? (
+                config.getRowModel().rows.map((row) => (
+                  <tr key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="px-6 py-4 whitespace-no-wrap border-b border-gray-200"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    ))}
+                    <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
+                      <RowActions
+                        hideCart={hideActionCart}
+                        hideEdit={hideActionEdit}
+                        hideDelete={hideActionDelete}
+                        onClickCart={() => onClickCart?.(row.original)}
+                        onClickEdit={() => onClickEdit?.(row.original.id)}
+                        onClickDelete={() => {
+                          !noConfirmDelete
+                            ? Modal.confirm({
+                                title: row.original.title,
+                                content: "Are you sure delete this data?",
+                                footer: (_, { OkBtn, CancelBtn }) => (
+                                  <>
+                                    <CancelBtn />
+                                    <OkBtn />
+                                  </>
+                                ),
+                                onOk: () => onConfirmDelete?.(row.original.id),
+                              })
+                            : onConfirmDelete?.(row.original.id);
+                        }}
+                      />
                     </td>
-                  ))}
-                  <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                    <RowActions
-                      onClickCart={() => onClickCart?.(row.original)}
-                      onClickEdit={() => onClickEdit?.(row.original.id)}
-                      onClickDelete={() => {
-                        Modal.confirm({
-                          title: row.original.title,
-                          content: "Are you sure delete this data?",
-                          footer: (_, { OkBtn, CancelBtn }) => (
-                            <>
-                              <CancelBtn />
-                              <OkBtn />
-                            </>
-                          ),
-                          onOk: () => onConfirmDelete?.(row.original.id),
-                        });
-                      }}
-                    />
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6}>
+                    <p className="text-center py-6">
+                      If there are no records available, the table is empty.
+                    </p>
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </Spin>
       )}
-      <div className="flex items-center justify-center">
-        <Pagination
-          current={page}
-          total={results.data?.count}
-          pageSize={pageSize}
-          pageSizeOptions={[5, 10, 20, 50]}
-          onChange={onPageChange}
-        />
-      </div>
+      {!hidePagination ? (
+        <div className="flex items-center justify-center">
+          <Pagination
+            current={page}
+            total={results?.data?.count}
+            pageSize={pageSize}
+            pageSizeOptions={[5, 10, 20, 50]}
+            onChange={onPageChange}
+          />
+        </div>
+      ) : null}
     </>
   );
 }

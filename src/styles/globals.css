@@ -3,15 +3,86 @@
 @tailwind utilities;
 
 :root {
-  --default-background: #ffffff;
+  --light: #ffffff;
+  --dark: #666666;
+  --black: #414141;
 }
 
-/* @media (prefers-color-scheme: dark) {
-  :root {
-    --default-background: #414141;
-  }
-} */
-
+html,
 body {
-  background: var(--default-background);
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.main-light {
+  background: var(--light);
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.main-dark {
+  background: var(--dark);
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.main-dark p {
+  color: var(--light);
+}
+
+.main-dark th,
+.main-dark input {
+  background-color: var(--black) !important;
+  color: var(--light);
+}
+
+.main-dark td {
+  color: var(--light) !important;
+}
+
+.main-dark button.ant-btn-default {
+  background: transparent !important;
+}
+
+.main-dark button.ant-btn-default span.anticon {
+  color: var(--light);
+}
+
+.main-dark .ant-pagination li {
+  background-color: transparent !important;
+}
+
+.main-dark .ant-pagination li.ant-pagination-item-active {
+  border-color: var(--light) !important;
+}
+
+.main-dark .ant-pagination li a {
+  color: var(--light) !important;
+}
+
+.main-dark .ant-pagination-item-link span {
+  color: var(--light) !important;
+}
+
+.main-dark :where(.css-dev-only-do-not-override-1qfezbu).ant-input-number .ant-input-number-input {
+  color: var(--light) !important;
+}
+
+.main-dark :where(.css-dev-only-do-not-override-1qfezbu).ant-select-outlined.ant-select-status-error:not(.ant-select-customize-input) .ant-select-selector,
+.main-dark :where(.css-dev-only-do-not-override-1qfezbu).ant-select-outlined:not(.ant-select-customize-input) .ant-select-selector {
+  background-color: var(--black) !important;
+  color: var(--light) !important;
+}
+
+.main-dark :where(.css-dev-only-do-not-override-1qfezbu).ant-btn>span {
+  color: var(--light);
+}
+
+.main-dark .anticon {
+  color: var(--light);
+}
+
+.main-dark :where(.css-dev-only-do-not-override-1qfezbu).ant-btn-primary.ant-btn-background-ghost {
+  border-color: var(--light) !important;
 }

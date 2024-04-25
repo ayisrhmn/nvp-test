@@ -6,6 +6,7 @@ type ProductsType = {
     name: string;
   };
   price: number;
+  quantity: number;
   description: string;
   images: any;
   creationAt: string;

@@ -197,7 +197,7 @@ export default function FormProduct({
                   key={item.id}
                   className="mb-4 flex gap-4 items-center justify-center"
                 >
-                  {itemId ? (
+                  {itemId && item.url ? (
                     <Image
                       className="rounded-md mr-4"
                       src={item.url}

@@ -16,12 +16,13 @@ import {
 } from "@/hooks";
 import { ZodType, z } from "zod";
 import { Skeleton } from "antd";
+import { useDispatch } from "react-redux";
+import { addItem } from "@/redux/cartSlice";
+import { toast } from "react-toastify";
 import DataTable from "@/components/molecules/DataTable";
 import FormProduct from "@/components/molecules/FormProduct";
 import { formatDate, formatMoney } from "@/utils";
 import { FieldType, ProductsType } from "@/utils/types";
-import { useDispatch } from "react-redux";
-import { addItem } from "@/redux/cartSlice";
 
 const columnHelper = createColumnHelper<ProductsType>();
 const columns = [
@@ -119,15 +120,61 @@ export default function Products() {
 
   const handleSearch = (value: string) => setKeyword(value);
 
+  const handleClickAdd = () => {
+    setMode("form");
+  };
+
+  const handleAddToCart = (item: any) => {
+    dispatch(addItem({ ...item, quantity: 1 }));
+    toast.success(`${item.title} successfully added to your cart!`, {
+      position: "top-right",
+      theme: "light",
+    });
+  };
+
+  const handleClickEdit = (id: number) => {
+    setMode("form");
+    setIdProduct(id);
+  };
+
+  const handleConfirmDelete = (id: number) => {
+    deleteProduct.mutateAsync(id).then(() => {
+      if (products.data?.items.length <= 1) {
+        setOffset(offset - limit);
+        setPage(page - 1);
+      }
+    });
+  };
+
+  const handleClickBack = () => {
+    setMode("table");
+    setIdProduct(null);
+    queryClient.invalidateQueries({
+      queryKey: ["products", keyword, offset, limit],
+    });
+    queryClient.removeQueries();
+  };
+
+  const handleSubmitForm = (data: any) => {
+    const mappedImages = data.images.map((item: any) => item.url);
+    const newData = {
+      ...data,
+      images: mappedImages,
+    };
+    if (!idProduct) {
+      createProduct.mutate(newData);
+    } else {
+      editProduct.mutateAsync({ id: idProduct, item: newData }).then(() => {
+        setIdProduct(null);
+      });
+    }
+  };
+
   const onPageChange = (page: number, pageSize: number) => {
     const pageOffset = (page - 1) * limit;
     setOffset(pageOffset);
     setLimit(pageSize);
     setPage(page);
-  };
-
-  const handleAddToCart = (item: any) => {
-    dispatch(addItem(item));
   };
 
   return (
@@ -139,22 +186,10 @@ export default function Products() {
             config={table}
             onSearch={handleSearch}
             queryResults={products}
-            onClickAdd={() => {
-              setMode("form");
-            }}
+            onClickAdd={handleClickAdd}
             onClickCart={handleAddToCart}
-            onClickEdit={(id: number) => {
-              setMode("form");
-              setIdProduct(id);
-            }}
-            onConfirmDelete={(id: number) => {
-              deleteProduct.mutateAsync(id).then(() => {
-                if (products.data?.items.length <= 1) {
-                  setOffset(offset - limit);
-                  setPage(page - 1);
-                }
-              });
-            }}
+            onClickEdit={handleClickEdit}
+            onConfirmDelete={handleConfirmDelete}
             page={page}
             pageSize={limit}
             onPageChange={onPageChange}
@@ -164,26 +199,8 @@ export default function Products() {
         <FormProduct
           itemId={idProduct}
           schema={schema}
-          onClickBack={() => {
-            setMode("table");
-            setIdProduct(null);
-            queryClient.invalidateQueries({
-              queryKey: ["products", keyword, offset, limit],
-            });
-            queryClient.removeQueries();
-          }}
-          onSubmitForm={(data: any) => {
-            const mappedImages = data.images.map((item: any) => item.url);
-            const newData = {
-              ...data,
-              images: mappedImages,
-            };
-            if (!idProduct) {
-              createProduct.mutate(newData);
-            } else {
-              editProduct.mutate({ id: idProduct, item: newData });
-            }
-          }}
+          onClickBack={handleClickBack}
+          onSubmitForm={handleSubmitForm}
         />
       )}
     </>
