@@ -15,6 +15,7 @@ const useProduct = (id: number | null) => {
   return useQuery({
     queryKey: ["product", id],
     queryFn: () => fetchProduct(id),
+    refetchOnWindowFocus: false,
   });
 };
 

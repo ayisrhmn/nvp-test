@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Navbar from "@/components/organisms/Navbar";
-import Footer from "@/components/organisms/Footer";
 import { Providers } from "./providers";
+import ReduxProvider from "@/template/redux-provider";
 import { ToastContainer } from "react-toastify";
+import Layout from "@/components/organisms/Layout";
 import dayjs from "dayjs";
 
 import "@/styles/globals.css";
@@ -30,10 +30,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Navbar />
-        <Providers>{children}</Providers>
-        <Footer />
-        <ToastContainer />
+        <Providers>
+          <ReduxProvider>
+            <Layout>{children}</Layout>
+            <ToastContainer />
+          </ReduxProvider>
+        </Providers>
       </body>
     </html>
   );

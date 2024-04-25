@@ -5,7 +5,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import { SearchProps } from "antd/es/input";
 import { Skeleton, Pagination, PaginationProps } from "antd";
 import Alert from "@/components/atoms/Alert";
-import { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
+import { UseQueryResult } from "@tanstack/react-query";
 import RowActions from "./RowActions";
 
 const { Search } = Input;
@@ -23,6 +23,7 @@ interface TableProps {
   pageSize: number;
   onSearch?: SearchProps["onSearch"];
   onClickAdd?: ButtonProps["onClick"];
+  onClickCart?: (item: any) => void;
   onClickEdit?: (id: number) => void;
   onConfirmDelete?: (id: number) => void;
   onPageChange: PaginationProps["onChange"];
@@ -35,6 +36,7 @@ export default function DataTable({
   pageSize,
   onSearch,
   onClickAdd,
+  onClickCart,
   onClickEdit,
   onConfirmDelete,
   onPageChange,
@@ -108,6 +110,7 @@ export default function DataTable({
                   ))}
                   <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
                     <RowActions
+                      onClickCart={() => onClickCart?.(row.original)}
                       onClickEdit={() => onClickEdit?.(row.original.id)}
                       onClickDelete={() => {
                         Modal.confirm({

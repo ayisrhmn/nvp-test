@@ -16,6 +16,7 @@ const useCategories = () => {
     queryKey: ["categories"],
     queryFn: () => fetchCategories(),
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
   });
 };
 
